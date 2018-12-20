@@ -1,9 +1,11 @@
 package code.restful;
 
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Optional;
 
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -14,7 +16,6 @@ import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
 
 import code.restful.addressbook.AddressBook;
-import code.restful.addressbook.dao.ContactDetails;
 import code.restful.addressbook.dao.IndexedContactDetailsInfo;
 import code.restful.addressbook.exceptions.InvalidDetailsException;
 import code.restful.addressbook.exceptions.NoContactDetailsFoundException;
@@ -26,7 +27,12 @@ import io.swagger.annotations.ApiParam;
 public class AddressBookController {
 
 	@Autowired
+	@Qualifier(value = "addressBook")
 	private AddressBook addressBook;
+
+	@Autowired
+	@Qualifier(value = "addressBook2")
+	private AddressBook addressBook2;
 
 	/**
 	 * API to show all the contacts in InMemory Table
@@ -42,8 +48,12 @@ public class AddressBookController {
 			@ApiParam(value = "Search contacts by firstName") @RequestParam(value = "firstName", required = false) String firstName,
 			@ApiParam(value = "Search contacts by lastName") @RequestParam(value = "lastName", required = false) String lastName,
 			@ApiParam(value = "Search contacts by phone") @RequestParam(value = "phone", required = false) String phone) {
-		return addressBook.retreiveContactDetails(Optional.ofNullable(firstName), Optional.ofNullable(lastName),
-				Optional.ofNullable(phone));
+		Collection<IndexedContactDetailsInfo> indexedContactDetailsInfoList = new ArrayList<IndexedContactDetailsInfo>();
+		indexedContactDetailsInfoList.addAll(addressBook.retreiveContactDetails(Optional.ofNullable(firstName),
+				Optional.ofNullable(lastName), Optional.ofNullable(phone)));
+		indexedContactDetailsInfoList.addAll(addressBook2.retreiveContactDetails(Optional.ofNullable(firstName),
+				Optional.ofNullable(lastName), Optional.ofNullable(phone)));
+		return indexedContactDetailsInfoList;
 	}
 
 	/**

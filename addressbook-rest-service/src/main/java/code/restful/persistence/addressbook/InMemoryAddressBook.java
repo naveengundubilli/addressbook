@@ -8,10 +8,12 @@ import java.util.Optional;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
+
 import javax.annotation.PostConstruct;
+
 import org.springframework.stereotype.Repository;
+
 import code.restful.addressbook.AddressBook;
-import code.restful.addressbook.dao.ContactDetails;
 import code.restful.addressbook.dao.IndexedContactDetailsInfo;
 
 @Repository
