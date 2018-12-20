@@ -12,7 +12,7 @@ Enviroment Details:
 
 Steps to use the application:
 
-1)Checkout the current branch and create a workspace in eclispe and setup the build path entries
+1)Checkout the current branch and create a workspace in eclipse and setup the build path entries
 2)Run /addressbook-rest-service/src/main/java/code/restful/AddressBookApplication.java as a java application
 
 Use the below url to see the initial data and also new entries after operations
