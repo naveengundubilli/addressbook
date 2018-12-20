@@ -18,6 +18,7 @@ public class ResourcesContactsFactory implements ContactDetailsFactory {
 	private static final ResourceBundle resourceContacts = ResourceBundle.getBundle("contactdetails");
 
 	private static final Pattern contactPattern = Pattern.compile("(?m)^firstName=(.*?),lastName=(.*?),phone=(.*)$");
+	private long identifier = 0;
 
 	@Override
 	public Collection<IndexedContactDetailsInfo> createInitialContactDetails() {
@@ -43,7 +44,11 @@ public class ResourcesContactsFactory implements ContactDetailsFactory {
 
 	@Override
 	public IndexedContactDetailsInfo createIndexedContact(ContactDetails aContactDetails) {
-		return new IndexedContactDetailsInfo(UUID.randomUUID().timestamp(), aContactDetails);
+		return new IndexedContactDetailsInfo(newUniqueIdentifier(), aContactDetails);
 	}
+	
+	private long newUniqueIdentifier() {
+      return identifier++;
+  }
 
 }

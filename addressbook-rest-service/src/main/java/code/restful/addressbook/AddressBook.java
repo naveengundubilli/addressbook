@@ -36,7 +36,7 @@ public interface AddressBook {
 	 * @param aContactDetails
 	 * @return IndexedContactDetailsInfo
 	 */
-	public IndexedContactDetailsInfo addContact(ContactDetails aContactDetails);
+	public IndexedContactDetailsInfo addContact(IndexedContactDetailsInfo aContactDetails);
 
 	/**
 	 * Delete contact based on ID

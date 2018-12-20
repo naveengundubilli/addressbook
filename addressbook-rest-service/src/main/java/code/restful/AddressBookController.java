@@ -65,7 +65,7 @@ public class AddressBookController {
 	@RequestMapping(method = RequestMethod.POST, consumes = "application/json", produces = "application/json")
 	@ResponseStatus(HttpStatus.CREATED)
 	public IndexedContactDetailsInfo addContact(
-			@ApiParam(value = "The contact to be added in the address book") @RequestBody ContactDetails contactDetails) {
+			@ApiParam(value = "The contact to be added in the address book") @RequestBody IndexedContactDetailsInfo contactDetails) {
 		return addressBook.addContact(contactDetails);
 	}
 
