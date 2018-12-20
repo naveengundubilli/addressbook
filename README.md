@@ -2,11 +2,15 @@
 
 Enviroment Details:
 
-jdk 1.8.192
-Eclipse Oxygen
-Tomcat 8.0.35
-Maven -apache-maven-3.3.3 and above
-JUnit 4 and above
+1) jdk 1.8.192 
+2) Eclipse Oxygen 
+3) Tomcat 8.0.35
+4) Maven -apache-maven-3.3.3 and above
+5) JUnit 4 and above
+6) Spring boot
+
+
+Steps to use the application:
 
 1)Checkout the current branch and create a workspace in eclispe and setup the build path entries
 2)Run /addressbook-rest-service/src/main/java/code/restful/AddressBookApplication.java as a java application
