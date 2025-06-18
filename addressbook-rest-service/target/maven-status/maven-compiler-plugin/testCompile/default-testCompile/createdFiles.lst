@@ -1,0 +1,4 @@
+test\restful\addressbook\tests\ResourcesContactsFactory.class
+code\restful\addressbook\AddressBookControllerTest.class
+code\restful\addressbook\AddressBookTest.class
+test\restful\addressbook\tests\MockServerTests.class

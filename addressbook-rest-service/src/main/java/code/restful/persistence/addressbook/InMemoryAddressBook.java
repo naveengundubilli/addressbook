@@ -1,133 +1,121 @@
 package code.restful.persistence.addressbook;
 
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 import java.util.Map;
-import java.util.Map.Entry;
 import java.util.Optional;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
-import javax.annotation.PostConstruct;
-
 import org.springframework.stereotype.Repository;
+import jakarta.annotation.PostConstruct;
 
 import code.restful.addressbook.AddressBook;
+import code.restful.addressbook.ContactDetails;
 import code.restful.addressbook.dao.IndexedContactDetailsInfo;
+import code.restful.exception.ContactNotFoundException;
+import code.restful.exception.DuplicateContactException;
 
 @Repository
 public class InMemoryAddressBook implements AddressBook {
 
-  /**
-   * Holds the contacts that will be available in this phone book.
-   */
-  private Map<Long, IndexedContactDetailsInfo> contactDetailsMap;
+    private final Map<Long, IndexedContactDetailsInfo> contacts = new ConcurrentHashMap<>();
+    private final AtomicLong idGenerator = new AtomicLong(1);
+    private ContactDetailsFactory contactDetailsFactory;
 
-  /**
-   * Is used to create contacts for this phone book.
-   */
-  private ContactDetailsFactory contactDetailsFactory;
-
-  public InMemoryAddressBook() {
-    contactDetailsFactory = new ContactDetailsImpl();
-  }
-
-  @PostConstruct
-  public void init() {
-    contactDetailsMap = contactDetailsFactory.createInitialContactDetailsMap();
-  }
-
-  public Collection<IndexedContactDetailsInfo> retreiveContactDetails(Optional<String> aFirstName,
-      Optional<String> aLastName, Optional<String> aPhoneNumber) {
-    Stream<IndexedContactDetailsInfo> contactStream =
-        contactDetailsMap.entrySet().stream().map(Entry::getValue);
-    if (!aFirstName.isPresent() && !aLastName.isPresent() && !aPhoneNumber.isPresent()) {
-      return contactStream.collect(Collectors.toList());
+    public InMemoryAddressBook() {
+        contactDetailsFactory = new ContactDetailsImpl();
     }
-    return contactStream
-        .filter(contactDetails -> (filterByAttribute(contactDetails::getFirstName, aFirstName)
-            && filterByAttribute(contactDetails::getLastName, aLastName)
-            && filterByAttribute(contactDetails::getPhone, aPhoneNumber)))
-        .collect(Collectors.toList());
-  }
 
-  public Optional<IndexedContactDetailsInfo> retreiveContactDetailsById(Long aId) {
-    return Optional.ofNullable(contactDetailsMap.get(aId));
-  }
-
-  public IndexedContactDetailsInfo addContact(IndexedContactDetailsInfo aContactDetailsInfo) {
-    IndexedContactDetailsInfo indexedContactDetailsInfo;
-    Stream<IndexedContactDetailsInfo> contactStream =
-        contactDetailsMap.entrySet().stream().map(Entry::getValue);
-    List<IndexedContactDetailsInfo> filteredContactDetailsInfoList = contactStream
-        .filter(contactDetails -> (filterById(contactDetails::getId, aContactDetailsInfo.getId())))
-        .collect(Collectors.toList());
-    if (!filteredContactDetailsInfoList.isEmpty()) {
-      indexedContactDetailsInfo = contactDetailsMap.get(aContactDetailsInfo.getId());
-      indexedContactDetailsInfo.setFirstName(aContactDetailsInfo.getFirstName());
-      indexedContactDetailsInfo.setLastName(aContactDetailsInfo.getLastName());
-      indexedContactDetailsInfo.setPhone(aContactDetailsInfo.getPhone());
-    } else {
-      indexedContactDetailsInfo = contactDetailsFactory.createIndexedContact(aContactDetailsInfo);
-      contactDetailsMap.put(indexedContactDetailsInfo.getId(), indexedContactDetailsInfo);
+    @PostConstruct
+    public void init() {
+        contactDetailsFactory.createInitialContactDetailsMap().forEach((id, contactDetails) -> {
+            contacts.put(id, contactDetails);
+        });
     }
-    return indexedContactDetailsInfo;
-  }
 
-  public void deleteContactDetails(Long id) {
-    contactDetailsMap.remove(id);
-
-  }
-
-  /**
-   * Compares a String attribute with another String value
-   * 
-   * If comparingAttribute, which is Optional, contains no value, boolean true will be returned.
-   * 
-   * @param getContactAttribute
-   * @param comparingAttribute
-   * @return
-   */
-  private boolean filterByAttribute(Supplier<String> getContactDetailsAttribute,
-      Optional<String> comparingAttribute) {
-    if (comparingAttribute.isPresent()) {
-      if (!comparingAttribute.get().equals(getContactDetailsAttribute.get())) {
-        return false;
-      }
+    @Override
+    public List<IndexedContactDetailsInfo> searchContacts(Optional<String> firstName,
+            Optional<String> lastName, Optional<String> phoneNumber) {
+        Stream<IndexedContactDetailsInfo> contactStream = contacts.values().stream();
+        if (!firstName.isPresent() && !lastName.isPresent() && !phoneNumber.isPresent()) {
+            return contactStream.collect(Collectors.toList());
+        }
+        return contactStream
+            .filter(contact -> filterByAttribute(contact::getFirstName, firstName)
+                && filterByAttribute(contact::getLastName, lastName)
+                && filterByAttribute(contact::getPhoneNumber, phoneNumber))
+            .collect(Collectors.toList());
     }
-    return true;
-  }
 
-  /**
-   * Compares a Long attribute with another Long value
-   * 
-   * If comparingAttribute, which is Optional, contains no value, boolean true will be returned.
-   * 
-   * @param getContactAttribute
-   * @param comparingAttribute
-   * @return
-   */
-  private boolean filterById(Supplier<Long> getContactDetailsAttribute, Long id) {
-    if (id != null) {
-      if (!id.equals(getContactDetailsAttribute.get())) {
-        return false;
-      }
+    @Override
+    public Optional<IndexedContactDetailsInfo> getContactById(Long id) {
+        return Optional.ofNullable(contacts.get(id));
     }
-    return true;
-  }
 
-  public void setContactDetailsFactory(ContactDetailsFactory aContactDetailsFactory) {
-    this.contactDetailsFactory = aContactDetailsFactory;
-  }
+    @Override
+    public IndexedContactDetailsInfo addContact(IndexedContactDetailsInfo contact) {
+        if (contact == null) {
+            throw new IllegalArgumentException("Contact details cannot be null");
+        }
+        
+        // Check for duplicate contact
+        if (contacts.values().stream().anyMatch(c -> 
+            c.getFirstName().equals(contact.getFirstName()) && 
+            c.getLastName().equals(contact.getLastName()))) {
+            throw new DuplicateContactException(contact.getFirstName(), contact.getLastName());
+        }
 
-  public class DuplicateContactException extends Exception {
-    private static final long serialVersionUID = 1L;
-
-    public DuplicateContactException(String message) {
-      super(message);
+        Long id = idGenerator.getAndIncrement();
+        contact.setId(id);
+        contacts.put(id, contact);
+        return contact;
     }
-  }
 
+    @Override
+    public IndexedContactDetailsInfo updateContact(Long id, IndexedContactDetailsInfo contact) {
+        if (contact == null) {
+            throw new IllegalArgumentException("Updated contact cannot be null");
+        }
 
+        IndexedContactDetailsInfo existingContact = contacts.get(id);
+        if (existingContact == null) {
+            throw new ContactNotFoundException(id);
+        }
+
+        contact.setId(id);
+        contacts.put(id, contact);
+        return contact;
+    }
+
+    @Override
+    public void deleteContact(Long id) {
+        if (!contacts.containsKey(id)) {
+            throw new ContactNotFoundException(id);
+        }
+        contacts.remove(id);
+    }
+
+    private boolean filterByAttribute(Supplier<String> getContactAttribute,
+            Optional<String> comparingAttribute) {
+        if (comparingAttribute.isPresent()) {
+            if (!comparingAttribute.get().equals(getContactAttribute.get())) {
+                return false;
+            }
+        }
+        return true;
+    }
+
+    public void setContactDetailsFactory(ContactDetailsFactory contactDetailsFactory) {
+        this.contactDetailsFactory = contactDetailsFactory;
+    }
+
+    public void clear() {
+        contacts.clear();
+        idGenerator.set(1);
+    }
 }

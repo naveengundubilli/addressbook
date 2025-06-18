@@ -1,0 +1,103 @@
+-------------------------------------------------------------------------------
+Test set: code.restful.AddressBookControllerTest
+-------------------------------------------------------------------------------
+Tests run: 9, Failures: 9, Errors: 0, Skipped: 0, Time elapsed: 4.747 s <<< FAILURE! -- in code.restful.AddressBookControllerTest
+code.restful.AddressBookControllerTest.addContact_WithValidData_ShouldCreateContact -- Time elapsed: 0.262 s <<< FAILURE!
+java.lang.AssertionError: Status expected:<201> but was:<500>
+	at org.springframework.test.util.AssertionErrors.fail(AssertionErrors.java:59)
+	at org.springframework.test.util.AssertionErrors.assertEquals(AssertionErrors.java:122)
+	at org.springframework.test.web.servlet.result.StatusResultMatchers.lambda$matcher$9(StatusResultMatchers.java:637)
+	at org.springframework.test.web.servlet.MockMvc$1.andExpect(MockMvc.java:214)
+	at code.restful.AddressBookControllerTest.addContact_WithValidData_ShouldCreateContact(AddressBookControllerTest.java:103)
+	at java.base/java.lang.reflect.Method.invoke(Method.java:580)
+	at java.base/java.util.ArrayList.forEach(ArrayList.java:1596)
+	at java.base/java.util.ArrayList.forEach(ArrayList.java:1596)
+
+code.restful.AddressBookControllerTest.getContacts_WithSearchParams_ShouldReturnFilteredContacts -- Time elapsed: 0.018 s <<< FAILURE!
+java.lang.AssertionError: Status expected:<200> but was:<500>
+	at org.springframework.test.util.AssertionErrors.fail(AssertionErrors.java:59)
+	at org.springframework.test.util.AssertionErrors.assertEquals(AssertionErrors.java:122)
+	at org.springframework.test.web.servlet.result.StatusResultMatchers.lambda$matcher$9(StatusResultMatchers.java:637)
+	at org.springframework.test.web.servlet.MockMvc$1.andExpect(MockMvc.java:214)
+	at code.restful.AddressBookControllerTest.getContacts_WithSearchParams_ShouldReturnFilteredContacts(AddressBookControllerTest.java:75)
+	at java.base/java.lang.reflect.Method.invoke(Method.java:580)
+	at java.base/java.util.ArrayList.forEach(ArrayList.java:1596)
+	at java.base/java.util.ArrayList.forEach(ArrayList.java:1596)
+
+code.restful.AddressBookControllerTest.getContacts_ShouldReturnAllContacts -- Time elapsed: 0.016 s <<< FAILURE!
+java.lang.AssertionError: Status expected:<200> but was:<500>
+	at org.springframework.test.util.AssertionErrors.fail(AssertionErrors.java:59)
+	at org.springframework.test.util.AssertionErrors.assertEquals(AssertionErrors.java:122)
+	at org.springframework.test.web.servlet.result.StatusResultMatchers.lambda$matcher$9(StatusResultMatchers.java:637)
+	at org.springframework.test.web.servlet.MockMvc$1.andExpect(MockMvc.java:214)
+	at code.restful.AddressBookControllerTest.getContacts_ShouldReturnAllContacts(AddressBookControllerTest.java:63)
+	at java.base/java.lang.reflect.Method.invoke(Method.java:580)
+	at java.base/java.util.ArrayList.forEach(ArrayList.java:1596)
+	at java.base/java.util.ArrayList.forEach(ArrayList.java:1596)
+
+code.restful.AddressBookControllerTest.deleteContact_WithInvalidId_ShouldReturnBadRequest -- Time elapsed: 0.031 s <<< FAILURE!
+java.lang.AssertionError: Status expected:<400> but was:<500>
+	at org.springframework.test.util.AssertionErrors.fail(AssertionErrors.java:59)
+	at org.springframework.test.util.AssertionErrors.assertEquals(AssertionErrors.java:122)
+	at org.springframework.test.web.servlet.result.StatusResultMatchers.lambda$matcher$9(StatusResultMatchers.java:637)
+	at org.springframework.test.web.servlet.MockMvc$1.andExpect(MockMvc.java:214)
+	at code.restful.AddressBookControllerTest.deleteContact_WithInvalidId_ShouldReturnBadRequest(AddressBookControllerTest.java:139)
+	at java.base/java.lang.reflect.Method.invoke(Method.java:580)
+	at java.base/java.util.ArrayList.forEach(ArrayList.java:1596)
+	at java.base/java.util.ArrayList.forEach(ArrayList.java:1596)
+
+code.restful.AddressBookControllerTest.getContact_WithInvalidId_ShouldReturnNotFound -- Time elapsed: 0.021 s <<< FAILURE!
+java.lang.AssertionError: Status expected:<404> but was:<500>
+	at org.springframework.test.util.AssertionErrors.fail(AssertionErrors.java:59)
+	at org.springframework.test.util.AssertionErrors.assertEquals(AssertionErrors.java:122)
+	at org.springframework.test.web.servlet.result.StatusResultMatchers.lambda$matcher$9(StatusResultMatchers.java:637)
+	at org.springframework.test.web.servlet.MockMvc$1.andExpect(MockMvc.java:214)
+	at code.restful.AddressBookControllerTest.getContact_WithInvalidId_ShouldReturnNotFound(AddressBookControllerTest.java:93)
+	at java.base/java.lang.reflect.Method.invoke(Method.java:580)
+	at java.base/java.util.ArrayList.forEach(ArrayList.java:1596)
+	at java.base/java.util.ArrayList.forEach(ArrayList.java:1596)
+
+code.restful.AddressBookControllerTest.getContact_WithValidId_ShouldReturnContact -- Time elapsed: 0.015 s <<< FAILURE!
+java.lang.AssertionError: Status expected:<200> but was:<500>
+	at org.springframework.test.util.AssertionErrors.fail(AssertionErrors.java:59)
+	at org.springframework.test.util.AssertionErrors.assertEquals(AssertionErrors.java:122)
+	at org.springframework.test.web.servlet.result.StatusResultMatchers.lambda$matcher$9(StatusResultMatchers.java:637)
+	at org.springframework.test.web.servlet.MockMvc$1.andExpect(MockMvc.java:214)
+	at code.restful.AddressBookControllerTest.getContact_WithValidId_ShouldReturnContact(AddressBookControllerTest.java:84)
+	at java.base/java.lang.reflect.Method.invoke(Method.java:580)
+	at java.base/java.util.ArrayList.forEach(ArrayList.java:1596)
+	at java.base/java.util.ArrayList.forEach(ArrayList.java:1596)
+
+code.restful.AddressBookControllerTest.updateContact_WithMismatchedId_ShouldReturnBadRequest -- Time elapsed: 0.018 s <<< FAILURE!
+java.lang.AssertionError: Status expected:<400> but was:<500>
+	at org.springframework.test.util.AssertionErrors.fail(AssertionErrors.java:59)
+	at org.springframework.test.util.AssertionErrors.assertEquals(AssertionErrors.java:122)
+	at org.springframework.test.web.servlet.result.StatusResultMatchers.lambda$matcher$9(StatusResultMatchers.java:637)
+	at org.springframework.test.web.servlet.MockMvc$1.andExpect(MockMvc.java:214)
+	at code.restful.AddressBookControllerTest.updateContact_WithMismatchedId_ShouldReturnBadRequest(AddressBookControllerTest.java:125)
+	at java.base/java.lang.reflect.Method.invoke(Method.java:580)
+	at java.base/java.util.ArrayList.forEach(ArrayList.java:1596)
+	at java.base/java.util.ArrayList.forEach(ArrayList.java:1596)
+
+code.restful.AddressBookControllerTest.updateContact_WithValidData_ShouldUpdateContact -- Time elapsed: 0.013 s <<< FAILURE!
+java.lang.AssertionError: Status expected:<200> but was:<500>
+	at org.springframework.test.util.AssertionErrors.fail(AssertionErrors.java:59)
+	at org.springframework.test.util.AssertionErrors.assertEquals(AssertionErrors.java:122)
+	at org.springframework.test.web.servlet.result.StatusResultMatchers.lambda$matcher$9(StatusResultMatchers.java:637)
+	at org.springframework.test.web.servlet.MockMvc$1.andExpect(MockMvc.java:214)
+	at code.restful.AddressBookControllerTest.updateContact_WithValidData_ShouldUpdateContact(AddressBookControllerTest.java:115)
+	at java.base/java.lang.reflect.Method.invoke(Method.java:580)
+	at java.base/java.util.ArrayList.forEach(ArrayList.java:1596)
+	at java.base/java.util.ArrayList.forEach(ArrayList.java:1596)
+
+code.restful.AddressBookControllerTest.deleteContact_WithValidId_ShouldDeleteContact -- Time elapsed: 0.016 s <<< FAILURE!
+java.lang.AssertionError: Status expected:<204> but was:<500>
+	at org.springframework.test.util.AssertionErrors.fail(AssertionErrors.java:59)
+	at org.springframework.test.util.AssertionErrors.assertEquals(AssertionErrors.java:122)
+	at org.springframework.test.web.servlet.result.StatusResultMatchers.lambda$matcher$9(StatusResultMatchers.java:637)
+	at org.springframework.test.web.servlet.MockMvc$1.andExpect(MockMvc.java:214)
+	at code.restful.AddressBookControllerTest.deleteContact_WithValidId_ShouldDeleteContact(AddressBookControllerTest.java:132)
+	at java.base/java.lang.reflect.Method.invoke(Method.java:580)
+	at java.base/java.util.ArrayList.forEach(ArrayList.java:1596)
+	at java.base/java.util.ArrayList.forEach(ArrayList.java:1596)
+

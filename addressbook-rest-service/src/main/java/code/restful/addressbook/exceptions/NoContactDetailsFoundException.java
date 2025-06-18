@@ -8,8 +8,8 @@ public class NoContactDetailsFoundException extends RuntimeException {
 
 	private static final long serialVersionUID = 1L;
 
-	public NoContactDetailsFoundException(String aId) {
-		super("Could not find contact '" + aId + "'.");
-	};
+	public NoContactDetailsFoundException(String message) {
+		super(message);
+	}
 
 }

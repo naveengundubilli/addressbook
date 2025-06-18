@@ -1,0 +1,4 @@
+-------------------------------------------------------------------------------
+Test set: test.restful.addressbook.tests.MockServerTests
+-------------------------------------------------------------------------------
+Tests run: 12, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.862 s -- in test.restful.addressbook.tests.MockServerTests

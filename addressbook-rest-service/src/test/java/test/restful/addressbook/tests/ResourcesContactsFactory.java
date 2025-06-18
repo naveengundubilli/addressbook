@@ -9,7 +9,7 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
-import code.restful.addressbook.dao.ContactDetails;
+import code.restful.addressbook.ContactDetails;
 import code.restful.addressbook.dao.IndexedContactDetailsInfo;
 import code.restful.persistence.addressbook.ContactDetailsFactory;
 
@@ -43,8 +43,15 @@ public class ResourcesContactsFactory implements ContactDetailsFactory {
 	}
 
 	@Override
-	public IndexedContactDetailsInfo createIndexedContact(ContactDetails aContactDetails) {
-		return new IndexedContactDetailsInfo(newUniqueIdentifier(), aContactDetails);
+	public IndexedContactDetailsInfo createIndexedContact(ContactDetails contact) {
+		return new IndexedContactDetailsInfo(
+			contact.getId(),
+			contact.getFirstName(),
+			contact.getLastName(),
+			contact.getPhoneNumber(),
+			contact.getEmail(),
+			contact.getAddress()
+		);
 	}
 	
 	private long newUniqueIdentifier() {

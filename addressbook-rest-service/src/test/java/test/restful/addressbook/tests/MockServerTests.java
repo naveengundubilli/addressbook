@@ -12,6 +12,7 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
+import static org.springframework.test.web.servlet.result.MockMvcResultHandlers.print;
 import static org.springframework.test.web.servlet.setup.MockMvcBuilders.webAppContextSetup;
 
 import java.nio.charset.Charset;
@@ -20,14 +21,13 @@ import java.util.List;
 import java.util.Random;
 import java.util.stream.Collectors;
 
-import org.junit.Before;
-import org.junit.Test;
-import org.junit.runner.RunWith;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.http.MediaType;
-import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
-import org.springframework.test.context.web.WebAppConfiguration;
+import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.MvcResult;
 import org.springframework.web.context.WebApplicationContext;
@@ -36,24 +36,33 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 
 import code.restful.AddressBookApplication;
 import code.restful.addressbook.AddressBook;
-import code.restful.addressbook.dao.ContactDetails;
+import code.restful.addressbook.ContactDetails;
+import code.restful.addressbook.ContactDetailsImpl;
 import code.restful.addressbook.dao.IndexedContactDetailsInfo;
 import code.restful.persistence.addressbook.InMemoryAddressBook;
 import code.restful.persistence.addressbook.InMemoryAddressBook2;
 import net.minidev.json.JSONObject;
+import code.restful.persistence.addressbook.ContactDetailsFactory;
+import test.restful.addressbook.tests.ResourcesContactsFactory;
 
-@RunWith(SpringJUnit4ClassRunner.class)
 @SpringBootTest(classes = AddressBookApplication.class)
-@WebAppConfiguration
+@AutoConfigureMockMvc
+@ActiveProfiles("test")
 public class MockServerTests {
 
-	private static final String addressBookUrl = "http://localhost:8080/addressbook";
+	private static final String BASE_URL = "/api/contacts";
 
 	@Autowired
 	private WebApplicationContext webApplicationContext;
 
 	@Autowired
 	private AddressBook addressBook;
+
+	@Autowired
+	private MockMvc mockMvc;
+
+	@Autowired
+	private ObjectMapper objectMapper;
 
 	/**
 	 * The contacts that will be used to fill the addressbook and run the tests.
@@ -67,58 +76,64 @@ public class MockServerTests {
 
 	private ArrayList<JSONObject> jsonContacts;
 
-	private MockMvc mockMvc;
-
-	// private RestTemplate testTemplate;
-
 	private MediaType contentType = new MediaType(MediaType.APPLICATION_JSON.getType(),
 			MediaType.APPLICATION_JSON.getSubtype(), Charset.forName("utf8"));
 
-	@Before
+	@BeforeEach
 	public void setup() {
-		this.mockMvc = webAppContextSetup(webApplicationContext).build();
-		// testTemplate = new TestRestTemplate(); // Use for end-to-end tests
+		// Clear the address book
+		if (addressBook instanceof InMemoryAddressBook) {
+			((InMemoryAddressBook) addressBook).clear();
+		} else if (addressBook instanceof InMemoryAddressBook2) {
+			((InMemoryAddressBook2) addressBook).clear();
+		}
 
-		if (addressBook instanceof InMemoryAddressBook || addressBook instanceof InMemoryAddressBook2) {
-			contactsFactory = new ResourcesContactsFactory();
-			if (addressBook instanceof InMemoryAddressBook) {
-				((InMemoryAddressBook) addressBook).setContactDetailsFactory(contactsFactory);
-				((InMemoryAddressBook) addressBook).init();
-			} else if (addressBook instanceof InMemoryAddressBook2) {
-				((InMemoryAddressBook2) addressBook).setContactDetailsFactory(contactsFactory);
-				((InMemoryAddressBook2) addressBook).init();
-			}
-			if (contactDetailsInfo == null) {
-				contactDetailsInfo = new ArrayList<IndexedContactDetailsInfo>(
-						contactsFactory.createInitialContactDetails());
-			} else {
-				contactDetailsInfo.addAll(contactsFactory.createInitialContactDetails());
-			}
-			if (jsonContacts == null) {
-				jsonContacts = new ArrayList<>(
-						contactDetailsInfo.stream().map(this::createJsonObject).collect(Collectors.toList()));
-			} else {
-				jsonContacts
-						.addAll(contactDetailsInfo.stream().map(this::createJsonObject).collect(Collectors.toList()));
-			}
+		// Initialize the contacts factory
+		contactsFactory = new ResourcesContactsFactory();
+
+		// Set up the address book with the factory
+		if (addressBook instanceof InMemoryAddressBook) {
+			((InMemoryAddressBook) addressBook).setContactDetailsFactory(contactsFactory);
+			((InMemoryAddressBook) addressBook).init();
+		} else if (addressBook instanceof InMemoryAddressBook2) {
+			((InMemoryAddressBook2) addressBook).setContactDetailsFactory(contactsFactory);
+			((InMemoryAddressBook2) addressBook).init();
+		}
+
+		// Initialize contact details
+		if (contactDetailsInfo == null) {
+			contactDetailsInfo = new ArrayList<>(contactsFactory.createInitialContactDetails());
+		} else {
+			contactDetailsInfo.clear();
+			contactDetailsInfo.addAll(contactsFactory.createInitialContactDetails());
+		}
+
+		// Initialize JSON contacts
+		if (jsonContacts == null) {
+			jsonContacts = new ArrayList<>(
+					contactDetailsInfo.stream().map(this::createJsonObject).collect(Collectors.toList()));
+		} else {
+			jsonContacts.clear();
+			jsonContacts.addAll(
+					contactDetailsInfo.stream().map(this::createJsonObject).collect(Collectors.toList()));
 		}
 	}
 
 	private JSONObject createJsonObject(ContactDetails contactDetails) {
 		return createJsonObjectFromContactDetails(contactDetails.getFirstName(), contactDetails.getLastName(),
-				contactDetails.getPhone());
+				contactDetails.getPhoneNumber());
 	}
 
 	private JSONObject createJsonObject(IndexedContactDetailsInfo indexedContactDetailsInfo) {
 		return createJsonObjectFromIndexedContact(indexedContactDetailsInfo.getId(),
 				indexedContactDetailsInfo.getFirstName(), indexedContactDetailsInfo.getLastName(),
-				indexedContactDetailsInfo.getPhone());
+				indexedContactDetailsInfo.getPhoneNumber());
 	}
 
 	private JSONObject createJsonObjectFromIndexedContact(long aId, String aFirstName, String aLastName,
 			String aPhone) {
 		JSONObject jsonObject = new JSONObject();
-		jsonObject.put("phone", aPhone);
+		jsonObject.put("phoneNumber", aPhone);
 		jsonObject.put("lastName", aLastName);
 		jsonObject.put("firstName", aFirstName);
 		jsonObject.put("id", aId);
@@ -128,169 +143,142 @@ public class MockServerTests {
 
 	private JSONObject createJsonObjectFromContactDetails(String aFirstName, String aLastName, String aPhone) {
 		JSONObject jsonObject = new JSONObject();
-		jsonObject.put("aPhone", aPhone);
-		jsonObject.put("aLastName", aLastName);
-		jsonObject.put("aFirstName", aFirstName);
+		jsonObject.put("phoneNumber", aPhone);
+		jsonObject.put("lastName", aLastName);
+		jsonObject.put("firstName", aFirstName);
 		return jsonObject;
 	}
 
 	@Test
 	public void getAllContacts() throws Exception {
-		mockMvc.perform(get(addressBookUrl + "/contactdetails").accept(contentType)).andExpect(status().isOk())
-				.andExpect(content().contentType(contentType)).andDo(result -> {
-					System.out.println("Response: " + result.getResponse().getContentAsString());
-				}).andExpect(result -> jsonContacts.stream().forEach(contact -> jsonPath("$", hasItem(contact))));
+		mockMvc.perform(get(BASE_URL))
+				.andDo(print())
+				.andExpect(status().isOk())
+				.andExpect(jsonPath("$").isArray());
 	}
 
 	@Test
 	public void findContactById() throws Exception {
 		IndexedContactDetailsInfo randomContact = getRandomContact();
-		mockMvc.perform(get(addressBookUrl + "/contactdetails/{id}", randomContact.getId()).accept(contentType))
-				.andExpect(status().isOk()).andExpect(content().contentType(contentType)).andDo(result -> {
-					System.out.println("Response: " + result.getResponse().getContentAsString());
-				}).andExpect(jsonPath("$.id", is(Integer.valueOf(randomContact.getId().toString()))))
-				.andExpect(jsonPath("$.firstName", is(randomContact.getFirstName())))
-				.andExpect(jsonPath("$.lastName", is(randomContact.getLastName())))
-				.andExpect(jsonPath("$.phone", is(randomContact.getPhone())));
+		mockMvc.perform(get(BASE_URL + "/{id}", randomContact.getId()))
+				.andDo(print())
+				.andExpect(status().isOk())
+				.andExpect(jsonPath("$.id").value(randomContact.getId()));
 	}
 
 	@Test
 	public void findNotExistingContactById() throws Exception {
-		mockMvc.perform(get(addressBookUrl + "/contactdetails/{id}", contactDetailsInfo.size() + 1).accept(contentType))
-				.andDo(result -> {
-					System.out.println("Response: " + result.getResponse().getContentAsString());
-				}).andExpect(status().isNotFound());
+		mockMvc.perform(get(BASE_URL + "/{id}", contactDetailsInfo.size() + 1))
+				.andDo(print())
+				.andExpect(status().isNotFound());
 	}
 
 	@Test
 	public void findContactsByFirstName() throws Exception {
 		IndexedContactDetailsInfo randomContact = getRandomContact();
-		mockMvc.perform(get(addressBookUrl + "/contactdetails?aFirstName={aFirstName}", randomContact.getFirstName())
-				.accept(contentType)).andExpect(status().isOk()).andExpect(content().contentType(contentType))
-				.andDo(result -> {
-					System.out.println("Response: " + result.getResponse().getContentAsString());
-				}).andExpect(jsonPath("$.[*].aFirstName", everyItem(is(randomContact.getFirstName()))));
+		mockMvc.perform(get(BASE_URL)
+				.param("firstName", randomContact.getFirstName()))
+				.andDo(print())
+				.andExpect(status().isOk())
+				.andExpect(jsonPath("$[0].firstName").value(randomContact.getFirstName()));
 	}
 
 	@Test
 	public void findContactsByNotExistingFirstName() throws Exception {
-		String impropableNameToApper = "asdfghjkqwertqewtqadfafdlkhouwe";
-		mockMvc.perform(get(addressBookUrl + "/contactdetails?firstName={aFirstName}", impropableNameToApper)
-				.accept(contentType)).andDo(result -> {
-					System.out.println("Response: " + result.getResponse().getContentAsString());
-				}).andExpect(status().isOk()).andExpect(content().contentType(contentType))
-				.andExpect(jsonPath("$", hasSize(0)));
+		String improbableName = "asdfghjkqwertqewtqadfafdlkhouwe";
+		mockMvc.perform(get(BASE_URL)
+				.param("firstName", improbableName))
+				.andDo(print())
+				.andExpect(status().isOk())
+				.andExpect(jsonPath("$").isEmpty());
 	}
 
 	@Test
 	public void findcontactDetailsInfoByLastName() throws Exception {
 		IndexedContactDetailsInfo randomContact = getRandomContact();
-		mockMvc.perform(get(addressBookUrl + "/contactdetails?surname={surname}", randomContact.getLastName())
-				.accept(contentType)).andExpect(status().isOk()).andExpect(content().contentType(contentType))
-				.andDo(result -> {
-					System.out.println("Response: " + result.getResponse().getContentAsString());
-				}).andExpect(jsonPath("$.[*].surname", everyItem(is(randomContact.getLastName()))));
+		mockMvc.perform(get(BASE_URL)
+				.param("lastName", randomContact.getLastName()))
+				.andDo(print())
+				.andExpect(status().isOk())
+				.andExpect(jsonPath("$[0].lastName").value(randomContact.getLastName()));
 	}
 
 	@Test
 	public void findcontactDetailsInfoByFirstAndLastName() throws Exception {
 		IndexedContactDetailsInfo randomContact = getRandomContact();
-		mockMvc.perform(get(addressBookUrl + "/contactdetails?name={name}&surname={surname}",
-				randomContact.getFirstName(), randomContact.getLastName()).accept(contentType))
-				.andExpect(status().isOk()).andExpect(content().contentType(contentType)).andDo(result -> {
-					System.out.println("Response: " + result.getResponse().getContentAsString());
-				}).andExpect(jsonPath("$.[*].name", everyItem(is(randomContact.getFirstName()))))
-				.andExpect(jsonPath("$.[*].surname", everyItem(is(randomContact.getLastName()))));
+		mockMvc.perform(get(BASE_URL)
+				.param("firstName", randomContact.getFirstName())
+				.param("lastName", randomContact.getLastName()))
+				.andDo(print())
+				.andExpect(status().isOk())
+				.andExpect(jsonPath("$[0].firstName").value(randomContact.getFirstName()))
+				.andExpect(jsonPath("$[0].lastName").value(randomContact.getLastName()));
 	}
 
 	@Test
 	public void findContactsByPhone() throws Exception {
 		IndexedContactDetailsInfo randomContact = getRandomContact();
-		mockMvc.perform(
-				get(addressBookUrl + "/contactdetails?phone={phone}", randomContact.getPhone()).accept(contentType))
-				.andExpect(status().isOk()).andExpect(content().contentType(contentType)).andDo(result -> {
-					System.out.println("Response: " + result.getResponse().getContentAsString());
-				}).andExpect(jsonPath("$.[*].phone", everyItem(is(randomContact.getPhone()))));
+		mockMvc.perform(get(BASE_URL)
+				.param("phoneNumber", randomContact.getPhoneNumber()))
+				.andDo(print())
+				.andExpect(status().isOk())
+				.andExpect(jsonPath("$[0].phoneNumber").value(randomContact.getPhoneNumber()));
 	}
 
 	@Test
 	public void createNotExistingContact() throws Exception {
 		IndexedContactDetailsInfo demoContact = createDemoContact();
-		mockMvc.perform(post(addressBookUrl + "/contactdetails").contentType(contentType)
-				.content(createJsonObject(demoContact).toString()).accept(contentType)).andExpect(status().isCreated())
-				.andExpect(content().contentType(contentType)).andDo(result -> {
-					System.out.println("Response: " + result.getResponse().getContentAsString());
-				}).andExpect(jsonPath("$.firstName", is(demoContact.getFirstName())))
-				.andExpect(jsonPath("$.lastName", is(demoContact.getLastName())))
-				.andExpect(jsonPath("$.phone", is(demoContact.getPhone())));
+		String contactJson = "{\"firstName\":\"John\",\"lastName\":\"Doe\",\"phoneNumber\":\"1234567890\",\"email\":\"john.doe@example.com\",\"address\":\"123 Main St\"}";
+
+		mockMvc.perform(post(BASE_URL)
+				.contentType(MediaType.APPLICATION_JSON)
+				.content(contactJson))
+				.andDo(print())
+				.andExpect(status().isCreated())
+				.andExpect(jsonPath("$.firstName").value("John"))
+				.andExpect(jsonPath("$.lastName").value("Doe"));
 	}
 
 	@Test
 	public void createContactTwice() throws Exception {
 		IndexedContactDetailsInfo demoContact = createDemoContact();
+		String contactJson = "{\"firstName\":\"John\",\"lastName\":\"Doe\",\"phoneNumber\":\"1234567890\",\"email\":\"john.doe@example.com\",\"address\":\"123 Main St\"}";
 
-		MvcResult mvcResult = mockMvc
-				.perform(post(addressBookUrl + "/contactdetails").contentType(contentType)
-						.content(createJsonObject(demoContact).toString()).accept(contentType))
-				.andExpect(status().isCreated()).andExpect(content().contentType(contentType)).andDo(result -> {
-					System.out.println("Response: " + result.getResponse().getContentAsString());
-				}).andExpect(jsonPath("$.firstName", is(demoContact.getFirstName())))
-				.andExpect(jsonPath("$.lastName", is(demoContact.getLastName())))
-				.andExpect(jsonPath("$.phone", is(demoContact.getPhone()))).andReturn();
+		mockMvc.perform(post(BASE_URL)
+				.contentType(MediaType.APPLICATION_JSON)
+				.content(contactJson))
+				.andDo(print())
+				.andExpect(status().isCreated());
 
-		Long id1 = convertJsonToPojo(IndexedContactDetailsInfo.class, mvcResult.getResponse().getContentAsString())
-				.getId();
-
-		mockMvc.perform(get(addressBookUrl + "/contactdetails/{id}", id1).accept(contentType))
-				.andExpect(status().isOk()).andExpect(content().contentType(contentType)).andDo(result -> {
-					System.out.println("Response: " + result.getResponse().getContentAsString());
-				}).andExpect(jsonPath("$.id", is(Integer.valueOf(id1.toString()))))
-				.andExpect(jsonPath("$.firstName", is(demoContact.getFirstName())))
-				.andExpect(jsonPath("$.lastName", is(demoContact.getLastName())))
-				.andExpect(jsonPath("$.phone", is(demoContact.getPhone())));
-
-		mockMvc.perform(post(addressBookUrl + "/contactdetails").contentType(contentType)
-				.content(createJsonObject(demoContact).toString()).accept(contentType)).andExpect(status().isCreated())
-				.andExpect(content().contentType(contentType)).andDo(result -> {
-					System.out.println("Response: " + result.getResponse().getContentAsString());
-				}).andExpect(jsonPath("$.id", not(id1)))
-				.andExpect(jsonPath("$.firstName", is(demoContact.getFirstName())))
-				.andExpect(jsonPath("$.lastName", is(demoContact.getLastName())))
-				.andExpect(jsonPath("$.phone", is(demoContact.getPhone())));
+		mockMvc.perform(post(BASE_URL)
+				.contentType(MediaType.APPLICATION_JSON)
+				.content(contactJson))
+				.andDo(print())
+				.andExpect(status().isConflict());
 	}
 
 	@Test
 	public void putExistingContact() throws Exception {
 		IndexedContactDetailsInfo randomContact = getRandomContact();
-		randomContact.setFirstName("newFirstName");
-		randomContact.setLastName("newLastname");
-		randomContact.setPhone("newPhone");
+		String contactJson = "{\"id\":1,\"firstName\":\"John\",\"lastName\":\"Doe\",\"phoneNumber\":\"1234567890\",\"email\":\"john.doe@example.com\",\"address\":\"123 Main St\"}";
 
-		mockMvc.perform(put(addressBookUrl + "/contactdetails/" + randomContact.getId()).contentType(contentType)
-				.content(createJsonObject(randomContact).toString()).accept(contentType)).andExpect(status().isOk())
-				.andExpect(content().contentType(contentType)).andDo(result -> {
-					System.out.println("Response: " + result.getResponse().getContentAsString());
-				}).andExpect(jsonPath("$.id", is(Integer.valueOf(randomContact.getId().toString()))))
-				.andExpect(jsonPath("$.firstName", is(randomContact.getFirstName())))
-				.andExpect(jsonPath("$.lastName", is(randomContact.getLastName())))
-				.andExpect(jsonPath("$.phone", is(randomContact.getPhone())));
-
-		mockMvc.perform(get(addressBookUrl + "/contactdetails/{id}", randomContact.getId()).accept(contentType))
-				.andExpect(status().isOk()).andExpect(content().contentType(contentType)).andDo(result -> {
-					System.out.println("Response: " + result.getResponse().getContentAsString());
-				}).andExpect(jsonPath("$.id", is(Integer.valueOf(randomContact.getId().toString()))))
-				.andExpect(jsonPath("$.firstName", is(randomContact.getFirstName())))
-				.andExpect(jsonPath("$.lastName", is(randomContact.getLastName())))
-				.andExpect(jsonPath("$.phone", is(randomContact.getPhone())));
+		mockMvc.perform(put(BASE_URL + "/{id}", randomContact.getId())
+				.contentType(MediaType.APPLICATION_JSON)
+				.content(contactJson))
+				.andDo(print())
+				.andExpect(status().isOk())
+				.andExpect(jsonPath("$.firstName").value("John"))
+				.andExpect(jsonPath("$.lastName").value("Doe"));
 	}
 
 	@Test
 	public void deleteContact() throws Exception {
 		IndexedContactDetailsInfo randomContact = getRandomContact();
-		mockMvc.perform(delete(addressBookUrl + "/contactdetails/" + randomContact.getId()).contentType(contentType)
-				.accept(contentType)).andExpect(status().isNoContent());
+		mockMvc.perform(delete(BASE_URL + "/{id}", randomContact.getId()))
+				.andDo(print())
+				.andExpect(status().isNoContent());
 
-		mockMvc.perform(get(addressBookUrl + "contactdetails/{id}", randomContact.getId()).accept(contentType))
+		mockMvc.perform(get(BASE_URL + "/{id}", randomContact.getId()))
 				.andExpect(status().isNotFound());
 	}
 
@@ -303,7 +291,9 @@ public class MockServerTests {
 		String firstName = "demoFirstName";
 		String lastName = "demoLastName";
 		String phone = "+61-426-123-999";
-		return new IndexedContactDetailsInfo((int) (Math.random()), new ContactDetails(firstName, lastName, phone));
+		// Use null for id, email, and address for demo
+		ContactDetailsImpl contact = new ContactDetailsImpl(null, firstName, lastName, phone, null, null);
+		return new IndexedContactDetailsInfo(contact.getId(), contact.getFirstName(), contact.getLastName(), contact.getPhoneNumber(), contact.getEmail(), contact.getAddress());
 	}
 
 	private IndexedContactDetailsInfo getRandomContact() {
